@@ -4,7 +4,6 @@ env:
   variables:
     REPOSITORY_URI: 034362031980.dkr.ecr.us-east-1.amazonaws.com/aime-chatbot
     IMAGE_TAG: latest
-    git-credential-helper: yes
 phases:
   pre_build:
     commands:

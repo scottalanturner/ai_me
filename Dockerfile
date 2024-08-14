@@ -1,5 +1,5 @@
-# Use a smaller base image
-FROM python:3.12-slim-bullseye
+# Use a smaller base image from AWS Public ECR
+FROM public.ecr.aws/docker/library/python:3.12-slim-bullseye
 
 # Install Git
 RUN apt-get update && apt-get install -y git
