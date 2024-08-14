@@ -21,4 +21,5 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 EXPOSE 8501
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "main.py"]
+#CMD ["streamlit", "run", "main.py"]
+ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"]
