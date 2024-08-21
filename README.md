@@ -3,6 +3,23 @@ This is roughly how I did it for the Streamlit app, integrating with Bedrock and
 # Write code 
 - Start incrementally, build+test+run each step for each small feature
 
+## AWS Session access
+We have three cases for accessing AWS resources from the boto session. You can see the coding examples in `chatbot_backend.py`
+1. Locally using the AWS CLI default profile 
+This `access_key_id` and `secret_access_key` are in the local cli properties file.
+
+2. Locally from a Docker image
+Docker doesn't have access to the env, so the access creds are passed on the command line when running docker. Note this was for a streamlit app so the ports are mapped.
+
+`docker run -d -e aws_access_key_id=<replace> -e aws_secret_access_key=<replace> -p 8501:8501 <image_name>:<version>`
+
+3. Running in an AWS env
+No idea. In the EC2 instance shell, ec2 is added to the docker group. I think this skipped having to use secrets. Secrets were for AppRunner, but that blew up and we switched to ec2 because it allows websockets (AppRunner does not).
+
+Old way?
+This one is the most challenging. The key/vals are in AWS secrets manager.
+So - without valid authentication to get the authentication credentials, an IAM user/role had to have permissions to access the secret. This is the same user/role that is running the instance.
+
 # Run locally
 - Run from a shell/debugger
 

@@ -3,4 +3,4 @@ langchain_aws==0.1.16
 elevenlabs==1.6.1
 boto3==1.34.154
 streamlit==1.37.1
-
+yaml==0.2.2

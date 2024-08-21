@@ -1,0 +1,5 @@
+model_id: anthropic.claude-instant-v1
+knowledge_base_id:
+temperature: 0.9
+max_tokens_to_sample: 2000
+region_name: us-east-1
