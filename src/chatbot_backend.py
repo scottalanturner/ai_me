@@ -1,11 +1,14 @@
 from langchain_aws import ChatBedrock, AmazonKnowledgeBasesRetriever
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
+from langchain_core.runnables.history import RunnableWithMessageHistory
 import boto3
 import os
 import json
 from botocore.exceptions import ClientError
 from config import config
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
 
 def chatbot():
     '''
@@ -87,7 +90,7 @@ def chatbot():
         #max_tokens_to_sample=config.get('max_tokens_to_sample')
     )
     # Create a Bedrock Knowledge Base Retriever instance
-    knowledge_base_id = None#config.get('knowledge_base_id')
+    knowledge_base_id = config.get('knowledge_base_id')
     retriever = None
 
     if (knowledge_base_id is not None):
@@ -96,6 +99,8 @@ def chatbot():
             retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
             client=client
         )
+        print(f'Using knowledge base {knowledge_base_id}')
+
     return chat_bedrock, retriever
 
 
@@ -118,11 +123,26 @@ def conversation(input_text: str, memory):
     '''
     chat_bedrock, retriever = chatbot()
 
-    chat_chain = ConversationChain(
-        llm=chat_bedrock,
-        memory=memory,
-        #retriever=retriever,
-        verbose=True
-    )
-    chat_reply = chat_chain.predict(input=input_text)
+    chat_chain_kwargs = {
+        'llm': chat_bedrock,
+        'memory': memory,
+        'verbose': True
+    }
+    if (retriever is not None):
+        chat_chain_kwargs['retriever'] = retriever
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You're an assistant who's good at {ability}"),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{question}"),
+    ])
+
+    #chat_chain = ConversationChain(**chat_chain_kwargs)
+    chain = prompt | chat_bedrock
+    chat_chain = RunnableWithMessageHistory(chain,
+                                            chat_bedrock,
+                                            input_messages_key="role",
+                                            history_messages_key="text")
+
+    chat_reply = chat_chain.invoke(input=input)
     return chat_reply
