@@ -1,3 +1,14 @@
+# Check your Dockerfil
+- Check the main file
+
+# Commit code to github
+
+# AWS - CodeBuild
+- Goto the AIME project
+
+
+# You need to be in an EC2 terminal to do this
+
 sudo apt-get update -y
 
 # install docker
