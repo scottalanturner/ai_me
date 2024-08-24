@@ -93,6 +93,7 @@ class ChatBot:
         retriever = AmazonKnowledgeBasesRetriever(
             knowledge_base_id=config.get('knowledge_base_id'),
             retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
+            client=self.client,
         )
 
         model_kwargs =  { 

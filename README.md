@@ -83,6 +83,10 @@ This video in the 2nd half has a good overview. Note he is pulling a docker imag
 
 https://www.youtube.com/watch?v=DflWqmppOAg
 
+--> I don't have the steps for creating a new instance, since the one I created is done.
+
+- The Role used for the instance needs to have access to the knowledge base, otherwise the chat won't execute when it tries to load the kb.
+
 ## Steps
 
 - Open the EC2 service
