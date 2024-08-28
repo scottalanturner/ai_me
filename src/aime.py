@@ -30,7 +30,7 @@ def get_secret(secret_name : str, key_name : str) -> str:
     session = boto3.session.Session()
     client = session.client(
         service_name='secretsmanager',
-        region_name=config.get("region-name")
+        region_name=config.get("region_name")
     )
 
     try:
@@ -61,7 +61,7 @@ logging.getLogger().setLevel(logging.ERROR) # reduce log level
 
 bedrock_runtime = boto3.client(
     service_name="bedrock-runtime",
-    region_name=config.get("region-name"),
+    region_name=config.get("region_name"),
 )
 
 model_id = config.get("model_id")
