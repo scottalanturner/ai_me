@@ -3,18 +3,22 @@ from langchain_aws import ChatBedrock, AmazonKnowledgeBasesRetriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import RunnableParallel
-import streamlit as st
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from botocore.exceptions import ClientError
 import boto3
+import streamlit as st
 from config import config
 import os
 import json
+from operator import itemgetter
 
 class ChatBot:
-    def __init__(self):
-        self.aws_access_key_id = None
-        self.aws_secret_access_key = None
+    @staticmethod
+    @st.cache_resource
+    def get_bedrock_client():
+        aws_access_key_id = None
+        aws_secret_access_key = None
+        boto_session = None
 
         # When running in a container on AWS, we use the secret manager to get the credentials
         # Create a Secrets Manager client
@@ -22,8 +26,9 @@ class ChatBot:
             secret_name = "prod/ai-me/ecs_image"
 
             # Running in an AWS environment (e.g., ECS, Lambda)
-            self.session = boto3.session.Session()
-            client = self.session.client(
+            boto_session = boto3.session.Session()
+
+            client = boto_session.client(
                 service_name='secretsmanager',
                 region_name=config.get('region_name')
             )
@@ -38,33 +43,36 @@ class ChatBot:
             
             secret_dict = json.loads(get_secret_value_response['SecretString'])
 
-            self.aws_access_key_id = secret_dict.get('aws_access_key_id')
-            self.aws_secret_access_key = secret_dict.get('aws_secret_access_key')
+            aws_access_key_id = secret_dict.get('aws_access_key_id')
+            aws_secret_access_key = secret_dict.get('aws_secret_access_key')
         
         # loading from Docker
         elif os.environ.get('aws_access_key_id') is not None:
         # Running locally (e.g., Docker or from command line)
-            self.aws_access_key_id=os.environ.get('aws_access_key_id')
-            self.aws_secret_access_key=os.environ.get('aws_secret_access_key')
-            if (self.aws_access_key_id is None or self.aws_secret_access_key is None):
+            aws_access_key_id=os.environ.get('aws_access_key_id')
+            aws_secret_access_key=os.environ.get('aws_secret_access_key')
+            if (aws_access_key_id is None or aws_secret_access_key is None):
                 raise ValueError("AWS credentials not found")
             
-            self.session = boto3.session.Session(
-                aws_access_key_id=self.aws_access_key_id,
-                aws_secret_access_key=self.aws_secret_access_key,
+            boto_session = boto3.session.Session(
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
                 region_name=config.get('region_name')
             )
         # Running on local machine without docker, pull from ~/.aws/credentials file
         else:
-            self.session = boto3.session.Session()
+            boto_session = boto3.session.Session()
 
         # bedrock client, using the session credential for the region
-        self.client = self.session.client(
+        bedrock_client = boto_session.client(
             service_name='bedrock-runtime',
             region_name=config.get('region_name')
         )
-
-    def get_prompt_template(self):    
+        print('ChatBot initialized')
+        return bedrock_client
+    
+    @staticmethod
+    def get_prompt_template():    
         template = '''Answer the question using the following context along with your existing knowledge. If you don't know the answer, please say so.
 
         Your response should:
@@ -86,14 +94,15 @@ class ChatBot:
 
         return prompt
     
-    def init_model(self):
-        prompt = self.get_prompt_template()
+    @staticmethod
+    def init_model(bedrock_client):
+        prompt = ChatBot.get_prompt_template()
 
         # Amazon Bedrock - KnowledgeBase Retriever 
         retriever = AmazonKnowledgeBasesRetriever(
             knowledge_base_id=config.get('knowledge_base_id'),
             retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
-            client=self.client,
+            client=bedrock_client,
         )
 
         model_kwargs =  { 
@@ -104,11 +113,10 @@ class ChatBot:
             "stop_sequences": ["\n\nHuman"],
         }
         model = ChatBedrock(
-            client=self.client,
+            client=bedrock_client,
             model_id=config.get('model_id'),
             model_kwargs=model_kwargs,
-        )
-        from operator import itemgetter
+        )       
 
         chain = (
             RunnableParallel({
@@ -119,13 +127,15 @@ class ChatBot:
             .assign(response = prompt | model | StrOutputParser())
         )
         # Streamlit Chat Message History
-        self.history = StreamlitChatMessageHistory(key="chat_messages")
+        history = StreamlitChatMessageHistory(key="chat_messages")
 
         # Chain with History
-        self.chain_with_history = RunnableWithMessageHistory(
+        chain_with_history = RunnableWithMessageHistory(
             chain,
-            lambda session_id: self.history,
+            lambda session_id: history,
             input_messages_key="question",
             history_messages_key="history",
             output_messages_key="response",
         )
+
+        return history, chain_with_history

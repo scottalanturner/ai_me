@@ -22,4 +22,4 @@ EXPOSE 8501
 
 # Command to run the Streamlit app
 #CMD ["streamlit", "run", "main.py"]
-ENTRYPOINT ["streamlit", "run", "src/stream_front.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "src/aime.py", "--server.port=80", "--server.address=0.0.0.0"]

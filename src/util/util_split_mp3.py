@@ -17,4 +17,6 @@ def split_mp3(file_path, max_size_mb):
         print(f"Exported: part_{i // duration_per_split}.mp3")
 
 # Example usage:
-split_mp3("/Users/sturner/Downloads/ViewfromtheTop.mp3", 9)  # Split into 10MB parts
+#split_mp3("/Users/sturner/Downloads/ViewfromtheTop.mp3", 9)  # Split into 10MB parts
+
+split_mp3("/Users/sturner/Downloads/ViewfromtheTop.mp3", 100)  # Split into 100MB parts

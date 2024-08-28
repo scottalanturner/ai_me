@@ -23,8 +23,8 @@ def start_job(
     media_uri: str, 
     media_format: str,
     transcribe_client: boto3.client,
-    bucket_name: str,
-    transcribe_key: str
+    output_key: str,
+    output_bucket: str
 ):
     try:
         job = transcribe_client.start_transcription_job(
@@ -32,17 +32,17 @@ def start_job(
             Media={"MediaFileUri": media_uri},
             MediaFormat=media_format,
             LanguageCode="en-US",
-            OutputBucketName=bucket_name,
-            OutputKey=transcribe_key
+            OutputBucketName=output_bucket,
+            OutputKey=output_key
         )
         logger.info(f"Started transcription job {job_name} for {media_uri}")
-    except ClientError as e:
-        logger.exception(f"Couldn't start transcription job {job_name}")
+    except Exception as e:
+        logger.exception(f"Couldn't start transcription job {job_name} for {media_uri}: {e}")
         raise
     else:
         return job
 
-def transcribe_mp3(bucket_name:str, input_file_name: str, client_name: str):
+def transcribe_mp3(input_file_name: str, customer_id: str, upload_to_s3: bool = False):
     """ Connect to Amazon Transcribe and transcribe an MP3 file"""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: $(message)s")
 
@@ -50,31 +50,44 @@ def transcribe_mp3(bucket_name:str, input_file_name: str, client_name: str):
     s3_client = boto3.client("s3")
     transcribe_client = boto3.client("transcribe")
 
-    print(f"Creating bucket {bucket_name} in region {transcribe_client.meta.region_name}.")
+    object_name = None
+    media_uri = None
+    output_key = None
+    output_bucket = None
 
-    bucket = s3_resource.create_bucket(
-        Bucket=bucket_name
-    )
-    media_file_name = f"media/{input_file_name}"
-    media_object_key = input_file_name
-    transcribe_key = f"{client_name}/transcribe/{input_file_name}.json"
+    if (upload_to_s3):
+        print(f"Creating bucket {customer_id} in region {transcribe_client.meta.region_name}.")
 
-    # full path on s3
-    object_name = f"{client_name}/media/{media_object_key}"
-    copy_to_s3(s3_client, local_file=media_file_name, bucket=bucket_name, object_name=object_name)
+        bucket = s3_resource.create_bucket(
+            Bucket=customer_id
+        )
+        media_file_name = f"media/{input_file_name}"
+        media_object_key = input_file_name
+        transcribe_key = f"{customer_id}/transcribe/{input_file_name}.json"
 
-    media_uri = f"s3://{bucket.name}/{object_name}"
+        # full path on s3
+        object_name = f"{customer_id}/media/{media_object_key}"
+        copy_to_s3(s3_client, local_file=media_file_name, bucket=customer_id, object_name=object_name)
+        media_uri = f"s3://{bucket.name}/{object_name}"
+    else:
+        output_key = f"{customer_id}/transcribe/{input_file_name}.json"
+        output_bucket = 'sat-aime-client'
+        media_uri = f"s3://sat-aime-client/{customer_id}/media/{input_file_name}"
 
-    job_name = f"{client_name}-{int(time.time())}"
-    print(f"Starting transcription job {job_name} for {media_uri}")
+
+    job_name = f"{customer_id}-{int(time.time())}"
+    print(f"Starting transcription job {job_name}")
+    print(f"Media URI: {media_uri}")
+    print(f"Output Key: {output_key}")
+    print(f"Output Bucket: {output_bucket}")
 
     # Start the transcription job
     start_job(job_name=job_name, 
               media_uri=media_uri, 
-              media_format="mp3", 
+              media_format="mp4", 
               transcribe_client=transcribe_client,
-              bucket_name=bucket_name,
-              transcribe_key=transcribe_key)
+              output_key=output_key,
+              output_bucket=output_bucket)
 
     # Wait for the job to complete
     while True:
@@ -91,6 +104,8 @@ def transcribe_mp3(bucket_name:str, input_file_name: str, client_name: str):
         # Upload the transcription to S3 where it can be worked on by other services
         return status['TranscriptionJob']['Transcript']['TranscriptFileUri']
     else:
+        failure_reason = status['TranscriptionJob']['FailureReason']
+        logger.exception(f"Transcription job failed: {failure_reason}")
         raise Exception("Transcription job failed.")
 
 if __name__ == "__main__":
@@ -98,5 +113,5 @@ if __name__ == "__main__":
     #parser.add_argument("bucket_root", help="The name of the S3 bucket to create", type=str)
     #parser.add_argument("input file name", help="The name of the media file to transcribe", type=str)
     #args = parser.parse_args()
-
-    transcribe_mp3(bucket_name="sat-aime", input_file_name="sat775_mixdown.mp3", client_name="sat")
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    transcribe_mp3(customer_id="aaron", input_file_name="ISI2024Keynote.mp4")

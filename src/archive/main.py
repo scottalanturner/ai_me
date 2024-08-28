@@ -1,6 +1,6 @@
 import streamlit as st 
 import src.chatbot_backend as cb
-import src.text_to_speech_stream as tts
+import text_to_audio as tts
 
 # Set Title for Chatbot - https://docs.streamlit.io/library/api-reference/text/st.title
 st.title("Hi, This is AI Me :sunglasses:") 
