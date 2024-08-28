@@ -100,6 +100,7 @@ tta = tta.TextToAudio(elevenlabs_api_key)
 # Amazon Bedrock - KnowledgeBase Retriever 
 retriever = AmazonKnowledgeBasesRetriever(
     knowledge_base_id=knowledge_base_id,
+    region_name=config.get("region_name"),
     retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
 )
 
