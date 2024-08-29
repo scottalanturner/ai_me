@@ -2,7 +2,7 @@ from io import BytesIO
 from typing import IO
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
-
+import uuid
 
 class TextToAudio():
     def __init__(self, api_key: str):
@@ -42,8 +42,15 @@ class TextToAudio():
                 use_speaker_boost=True,
             ),
         )
-
-        print("Streaming audio data...")
+#        webm_file_path = f"{uuid.uuid4()}.mp3"
+#        with open(webm_file_path, "wb") as f:
+#            for chunk in response:
+#                if chunk:
+#                    f.write(chunk)
+            #response.stream_to_file(webm_file_path)
+        
+#        return webm_file_path
+        #print("Streaming audio data...")
 
         # Create a BytesIO object to hold audio data
         audio_stream = BytesIO()

@@ -7,6 +7,7 @@ import boto3
 from botocore.exceptions import ClientError
 import logging
 import json
+import os
 
 from typing import List, Dict
 from pydantic import BaseModel
@@ -22,6 +23,7 @@ from config import config
 import streamlit as st
 from langchain import hub
 import text_to_audio as tta
+import base64
 
 
 def get_secret(secret_name : str, key_name : str) -> str:
@@ -50,6 +52,24 @@ def get_secret(secret_name : str, key_name : str) -> str:
     else:
         raise KeyError(f"Key '{key_name}' not found in the secret.")
 
+
+def autoplay_audio(file_path: str):
+    with open(file_path, "rb") as f:
+        audio_bytes = f.read()
+    
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64, {audio_base64}">'
+        st.markdown(audio_tag, unsafe_allow_html=True)
+    os.remove(file_path)
+
+
+def autoplay_audio2(file_path: str):
+    with open(file_path, "rb") as f:
+        audio_bytes = f.read()
+    
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64, {audio_base64}">'
+        st.markdown(audio_tag, unsafe_allow_html=True)
 
 # ------------------------------------------------------
 # Log level
@@ -149,7 +169,7 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
-
+import time
 # Chat Input - User Prompt 
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -171,7 +191,25 @@ if prompt := st.chat_input():
         # Convert to voice
         audio_stream = tta.text_to_speech_stream(chat_response, voice_id) 
 
+        # Convert BytesIO to base64 string
+        audio_bytes = audio_stream.getvalue()
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        audio_src = f"data:audio/mp3;base64,{audio_base64}"
+
+
+        html_string = f"""
+                    <audio controls autoplay='True'>
+                    <source src="{audio_src}" type="audio/mp3">
+                    </audio>
+                    """
+
+        sound = st.empty()
+        sound.markdown(html_string, unsafe_allow_html=True)  # will display a st.audio with the sound you specified in the "src" of the html_string and autoplay it
+        #time.sleep(2)  # wait for 2 seconds to finish the playing of the audio
+        #sound.empty()  # op
+
+        #autoplay_audio2(audio_stream)
         # Display the audio in a player
-        st.audio(audio_stream, format="audio/mpeg", autoplay=True, start_time=0)
+        #st.audio(audio_stream, format="audio/mpeg", autoplay=True, start_time=0)
 
 #https://medium.com/@dminhk/knowledge-bases-for-amazon-bedrock-with-langchain-%EF%B8%8F-6cd489646a5c
