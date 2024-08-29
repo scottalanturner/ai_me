@@ -199,7 +199,7 @@ if prompt := st.chat_input():
 
         html_string = f"""
                     <audio controls autoplay='True'>
-                    <source src="{audio_src}" type="audio/mp3">
+                    <source src="{audio_src}" type="audio/mpeg">
                     </audio>
                     """
 
