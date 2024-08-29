@@ -188,23 +188,27 @@ if prompt := st.chat_input():
         # session_state append
         st.session_state.messages.append({"role": "assistant", "content": chat_response})
 
+
+        audio_mp3 = tta.text_to_speech_stream(chat_response, voice_id)
+        st.audio(audio_mp3, format="audio/mpeg", autoplay=True, start_time=0)
+
         # Convert to voice
-        audio_stream = tta.text_to_speech_stream(chat_response, voice_id) 
+        #audio_stream = tta.text_to_speech_stream(chat_response, voice_id) 
 
         # Convert BytesIO to base64 string
-        audio_bytes = audio_stream.getvalue()
-        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-        audio_src = f"data:audio/mpeg;base64,{audio_base64}"
+        #audio_bytes = audio_stream.getvalue()
+        #audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        #audio_src = f"data:audio/mpeg;base64,{audio_base64}"
 
 
-        html_string = f"""
-                    <audio controls autoplay='True'>
-                    <source src="{audio_src}" type="audio/mpeg">
-                    </audio>
-                    """
+        #html_string = f"""
+        #            <audio controls autoplay='True'>
+        #            <source src="{audio_src}" type="audio/mpeg">
+        #            </audio>
+        #            """
 
-        sound = st.empty()
-        sound.markdown(html_string, unsafe_allow_html=True)  # will display a st.audio with the sound you specified in the "src" of the html_string and autoplay it
+        #sound = st.empty()
+        #sound.markdown(html_string, unsafe_allow_html=True)  # will display a st.audio with the sound you specified in the "src" of the html_string and autoplay it
         #time.sleep(2)  # wait for 2 seconds to finish the playing of the audio
         #sound.empty()  # op
 
