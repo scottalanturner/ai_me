@@ -42,26 +42,26 @@ class TextToAudio():
                 use_speaker_boost=True,
             ),
         )
-        webm_file_path = f"{uuid.uuid4()}.mp3"
-        with open(webm_file_path, "wb") as f:
-            for chunk in response:
-                if chunk:
-                    f.write(chunk)
+        #webm_file_path = f"{uuid.uuid4()}.mp3"
+        #with open(webm_file_path, "wb") as f:
+        #    for chunk in response:
+        #        if chunk:
+        #            f.write(chunk)
             #response.stream_to_file(webm_file_path)
         
-        return webm_file_path
+        #return webm_file_path
         #print("Streaming audio data...")
 
         # Create a BytesIO object to hold audio data
-        #audio_stream = BytesIO()
+        audio_stream = BytesIO()
 
         # Write each chunk of audio data to the stream
-        ##for chunk in response:
-        #    if chunk:
-        #        audio_stream.write(chunk)
+        for chunk in response:
+            if chunk:
+                audio_stream.write(chunk)
 
         # Reset stream position to the beginning
-        #audio_stream.seek(0)
+        audio_stream.seek(0)
 
         # Return the stream for further use
-        #return audio_stream
+        return audio_stream

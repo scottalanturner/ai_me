@@ -188,9 +188,8 @@ if prompt := st.chat_input():
         # session_state append
         st.session_state.messages.append({"role": "assistant", "content": chat_response})
 
-
-        audio_mp3 = tta.text_to_speech_stream(chat_response, voice_id)
-        st.audio(audio_mp3, format="audio/mpeg", autoplay=True, start_time=0)
+        audio_stream = tta.text_to_speech_stream(chat_response, voice_id)
+        st.audio(audio_stream, format="audio/mpeg", autoplay=True, start_time=0)
 
         # Convert to voice
         #audio_stream = tta.text_to_speech_stream(chat_response, voice_id) 
