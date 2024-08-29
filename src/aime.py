@@ -194,7 +194,7 @@ if prompt := st.chat_input():
         # Convert BytesIO to base64 string
         audio_bytes = audio_stream.getvalue()
         audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-        audio_src = f"data:audio/mp3;base64,{audio_base64}"
+        audio_src = f"data:audio/mpeg;base64,{audio_base64}"
 
 
         html_string = f"""
