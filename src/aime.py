@@ -172,6 +172,6 @@ if prompt := st.chat_input():
         audio_stream = tta.text_to_speech_stream(chat_response, voice_id) 
 
         # Display the audio in a player
-        st.audio(audio_stream, format="audio/mp3", autoplay=True, start_time=0)
+        st.audio(audio_stream, format="audio/mpeg", autoplay=True, start_time=0)
 
 #https://medium.com/@dminhk/knowledge-bases-for-amazon-bedrock-with-langchain-%EF%B8%8F-6cd489646a5c

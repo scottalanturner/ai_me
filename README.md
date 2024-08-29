@@ -21,6 +21,8 @@ Old way?
 This one is the most challenging. The key/vals are in AWS secrets manager.
 So - without valid authentication to get the authentication credentials, an IAM user/role had to have permissions to access the secret. This is the same user/role that is running the instance.
 
+**NOTE** You must set the regions in the code properly, for many of the libraries. If you don't, you could get meaningless errors related to permissions/policies. The langchain_aws code is a good example with accessing a kb. I left out the region, pushed to EC2, and spent hours trying to figure out why the IAM role EC2 was using didn't have the proper policy permissions. In the end - I added the region to the code call and it fixed it.
+
 # Run locally
 - Run from a shell/debugger
 
