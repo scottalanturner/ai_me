@@ -179,3 +179,122 @@ If you do not stop the container, charges will continue to accrue on AWS!!!
 ```sh
 docker stop <container_id>
 ```
+
+
+# AWS Setup
+
+When setting up the traffic flow (browser -> app) it's easier to work backwards from the EC2 instance and see what loads/doesn't load in a browser. As each piece is added, check to make sure things work.
+
+For example: First, get the instance running and trying loading the app from an unsecure browser connection to the ip/port: http://ec2port:8501
+
+Does it load and work? Great. Now add the load balancer.
+
+When the load balancer is set, try loading the LB DNS into a browser.
+
+Does that work? Great. Now setup the hosted zone in Route53 and point the A record to the LB.
+
+Configuring the LB and getting the ports forwarded properly to EC2, along with the health check ports, the target group ports, target, ssl cert, is a lot of steps. It's a lot of screens, and a lot of creating things. It's basically a rabbit hole where lots can go wrong. I found prompting Q to what settings I should do based on what I was trying to accomplish fixed a lot of the issues I ran into (after the fact). Here's a couple I wanted to save for the future.
+
+Overall the steps should be:
+
+EC2
+Security Certificate
+LB
+- LB Target
+- LB Target Group
+- LB Security Group (not the default, you can add up to 5)
+Route 53
+
+Q: Explain what my target group settings should be. My load balancer should listen for https requests. It needs to send the request to the ec2 instance. The ec2 instance application is expecting traffic on port 8501.
+
+Based on your requirements, here's how you should configure your target group and load balancer: [1]
+
+1. Target Group Settings:
+
+- Target type: Instance
+
+- Protocol: HTTP (not HTTPS, as the load balancer will handle SSL termination)
+
+- Port: 8501 (this is the port your application is listening on)
+
+- VPC: Select the VPC where your EC2 instance is located
+
+- Health check protocol: HTTP
+
+- Health check port: 8501 [2]
+
+- Health check path: / (or the appropriate path that returns a 200 OK)
+
+- Healthy threshold: 2 (default, adjust if needed)
+
+- Unhealthy threshold: 2 (default, adjust if needed)
+
+- Timeout: 5 seconds (default, adjust if needed)
+
+- Interval: 30 seconds (default, adjust if needed)
+
+- Success codes: 200 (or the appropriate success code for your application)
+
+2. Load Balancer Listener:
+
+- Protocol: HTTPS [3]
+
+- Port: 443 (standard HTTPS port)
+
+- Default action: Forward to your target group
+
+3. SSL/TLS Certificate:
+
+- You'll need to attach a valid SSL/TLS certificate to your HTTPS listener
+
+4. EC2 Instance Configuration:
+
+- Ensure your application is listening on port 8501
+
+- The security group should allow inbound traffic on port 8501 from the load balancer's security group [4]
+
+5. Load Balancer Security Group:
+
+- Inbound rule: Allow HTTPS (port 443) from anywhere (0.0.0.0/0)
+
+- Outbound rule: Allow traffic to your EC2 instance on port 8501
+
+This setup allows the load balancer to receive HTTPS traffic on port 443, terminate SSL, and then forward the decrypted HTTP traffic to your EC2 instance on port 8501. The EC2 instance doesn't need to handle HTTPS itself in this configuration.
+
+Remember to register your EC2 instance with this target group and ensure it passes the health checks. If you're still experiencing issues, double-check these settings and review your application logs for any errors.
+
+Q: how to set this outbound rule: Outbound rule: Allow traffic to your EC2 instance on port 8501.
+
+To set the outbound rule allowing traffic from your load balancer to your EC2 instance on port 8501, follow these steps: [1]
+
+1. Open the EC2 console in AWS.
+
+2. In the navigation pane, click on "Security Groups".
+
+3. Find and select the security group associated with your load balancer.
+
+4. Click on the "Outbound rules" tab. [2]
+
+5. Click "Edit outbound rules".
+
+6. Click "Add rule".
+
+7. Configure the new rule as follows:
+
+- Type: Custom TCP
+
+- Protocol: TCP
+
+- Port range: 8501
+
+- Destination: Select "Custom" and enter the security group ID of your EC2 instance (This is more secure than using the EC2's IP address or CIDR block)
+
+- Description: (Optional) Add a description like "Allow traffic to EC2 on port 8501"
+
+8. Click "Save rules".
+
+This configuration allows the load balancer to send traffic only to your EC2 instance's security group on port 8501, which is more secure than opening it to all destinations.
+
+Remember to also ensure that the inbound rules on your EC2 instance's security group allow traffic from the load balancer's security group on port 8501.
+
+By using security group IDs for the source (in EC2's inbound rules) and destination (in load balancer's outbound rules), you create a more secure and flexible setup that doesn't rely on specific IP addresses.
