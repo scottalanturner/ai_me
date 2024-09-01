@@ -183,6 +183,10 @@ docker stop <container_id>
 
 # AWS Setup
 
+Notes.
+The docker container exposes port 8501. This is what Streamlit runs on. It's expecting traffic on 8501 from the EC2 instance. If all you use is EC2 (no LB), then you add :8501 to the browser request. We aren't using Apache/Nginx to listen on 80 and port forward to 8501. We're accomplishing that with the LB. The LB takes the requests on 443 (because we're not supporting unencrypted traffic on 80) and sends that to 8501 on EC2. Then EC2 takes the 8501 traffic and gives it to Streamlit on 8501. So we don't need any 443/80 configuration within EC2/docker.
+
+--------
 When setting up the traffic flow (browser -> app) it's easier to work backwards from the EC2 instance and see what loads/doesn't load in a browser. As each piece is added, check to make sure things work.
 
 For example: First, get the instance running and trying loading the app from an unsecure browser connection to the ip/port: http://ec2port:8501

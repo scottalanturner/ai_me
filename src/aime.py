@@ -52,24 +52,29 @@ def get_secret(secret_name : str, key_name : str) -> str:
     else:
         raise KeyError(f"Key '{key_name}' not found in the secret.")
 
+def get_user_params(user_id: str) -> Dict:
+    user_params = None
+    # Logic to retrieve user parameters based on user_id
+    # This could involve querying a database or using some other method
+    # For the sake of this example, we'll use a hardcoded dictionary
+    if user_id == "aaron":
+        user_params = {
+            "prompt_id": "prompt-aaron",
+            "voice_id": "giDRC0GdQ7IFfhzcHx2a",
+            "knowledge_base_id": "LGSNRAS7OL",
+            "bot_name": "AIron",
+            "bot_description": "I'm an AI business coach."
+        }
+    else:
+        user_params = {
+            "prompt_id": "scott-prompt",
+            "voice_id": "wzlHb5hWRmpfSi9CTjhM",
+            "knowledge_base_id": "ECROK4NA2O",
+            "bot_name": "AI Scott",
+            "bot_description": "I'm a personal finance AI that answers questions based on the vast brilliance of Scott Alan Turner, CFP."
+        }
 
-def autoplay_audio(file_path: str):
-    with open(file_path, "rb") as f:
-        audio_bytes = f.read()
-    
-        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-        audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64, {audio_base64}">'
-        st.markdown(audio_tag, unsafe_allow_html=True)
-    os.remove(file_path)
-
-
-def autoplay_audio2(file_path: str):
-    with open(file_path, "rb") as f:
-        audio_bytes = f.read()
-    
-        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-        audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64, {audio_base64}">'
-        st.markdown(audio_tag, unsafe_allow_html=True)
+    return user_params
 
 # ------------------------------------------------------
 # Log level
@@ -99,11 +104,13 @@ model_kwargs =  {
 # 2. voice_id
 # 3. knowledge_base_id
 # 4. name of the person
-
-prompt_id = 'prompt-aaron'
-voice_id = 'giDRC0GdQ7IFfhzcHx2a'#config.get("voice_id")
-knowledge_base_id = 'LGSNRAS7OL'#config.get("knowledge_base_id")
-bot_name = 'AIron'
+query_param_user = st.query_params.get("user")
+user_params = get_user_params(query_param_user)
+prompt_id = user_params['prompt_id']
+voice_id = user_params['voice_id']
+knowledge_base_id = user_params['knowledge_base_id']
+bot_name = user_params['bot_name']
+bot_description = user_params['bot_description']
 # ------------------------------------------------------
 # LangChain - get prompt template
 
@@ -159,17 +166,17 @@ st.title(f"Hi, This is {bot_name} :sunglasses:")
 # Clear Chat History function
 def clear_chat_history():
     history.clear()
-    st.session_state.messages = [{"role": "assistant", "content": f"I'm {bot_name}! an AI business coach created by Iron Sharpens Iron. What can I help you with today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": f"I'm {bot_name}! {bot_description}. What can I help you with today?"}]
 
 # Initialize session state for messages if not already present
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": f"I'm {bot_name}! an AI business coach created by Iron Sharpens Iron. What can I help you with today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": f"I'm {bot_name}! {bot_description}. What can I help you with today?"}]
 
 # Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
-import time
+
 # Chat Input - User Prompt 
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -191,28 +198,8 @@ if prompt := st.chat_input():
         audio_stream = tta.text_to_speech_stream(chat_response, voice_id)
         st.audio(audio_stream, format="audio/mpeg", autoplay=True, start_time=0)
 
-        # Convert to voice
-        #audio_stream = tta.text_to_speech_stream(chat_response, voice_id) 
-
-        # Convert BytesIO to base64 string
-        #audio_bytes = audio_stream.getvalue()
-        #audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-        #audio_src = f"data:audio/mpeg;base64,{audio_base64}"
-
-
-        #html_string = f"""
-        #            <audio controls autoplay='True'>
-        #            <source src="{audio_src}" type="audio/mpeg">
-        #            </audio>
-        #            """
-
-        #sound = st.empty()
-        #sound.markdown(html_string, unsafe_allow_html=True)  # will display a st.audio with the sound you specified in the "src" of the html_string and autoplay it
-        #time.sleep(2)  # wait for 2 seconds to finish the playing of the audio
-        #sound.empty()  # op
-
-        #autoplay_audio2(audio_stream)
-        # Display the audio in a player
-        #st.audio(audio_stream, format="audio/mpeg", autoplay=True, start_time=0)
-
-#https://medium.com/@dminhk/knowledge-bases-for-amazon-bedrock-with-langchain-%EF%B8%8F-6cd489646a5c
+# All that work trying to get autoplay to run on IOS was for naught. All of the solutions don't work. Including:
+# - inserting the <audio> tag into st.markdown
+# - capturing audio bytes and writing them using base64
+# - Using an mp3 instead of a stream. This just creates mp3 files stored on the computer (waste of space)
+# - Trying to trigger some type of user action. ? The user already interacted with the app.
