@@ -34,3 +34,14 @@ myenv/
 # Docker
 *.log
 *.tmp
+
+# Exclude kb-ingestion and all sub folders
+kb-ingestion/
+
+# Exclude transcription outputs
+transcription_outputs/
+
+# Exclude code archive
+src/archive/
+
+

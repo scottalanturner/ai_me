@@ -148,8 +148,9 @@ docker pull <ECR_repository_URI:image_version>
 ```
 Run it in the background. To see errors quickly, remove the -d option.
 
+Make sure the ports are correct. It's 8501:80. 8501 coming in on the EC2 instance, sending to 80. The app gets started configed for port 80 on the server, with 8501 exposed. Yes - confusing.
 ```sh
-docker run -d -p 8501:8501 <ECR_repository_URI:image_version>
+docker run -d -p 8501:80 <ECR_repository_URI:image_version>
 ```
 
 ## Streamlit access
@@ -302,3 +303,113 @@ This configuration allows the load balancer to send traffic only to your EC2 ins
 Remember to also ensure that the inbound rules on your EC2 instance's security group allow traffic from the load balancer's security group on port 8501.
 
 By using security group IDs for the source (in EC2's inbound rules) and destination (in load balancer's outbound rules), you create a more secure and flexible setup that doesn't rely on specific IP addresses.
+
+# RAG Client Setup
+
+The chatbot needs several customizations:
+
+1. Knowledgebase
+2. Cloned voice
+3. Prompt
+
+## Creating the cloned voice
+
+11ElevenLabs makes this easy. They are also one of the few services that allow voice cloning. Setup your account. A paid plan is necessary.
+
+The prep-work for the files is what takes the most time.
+
+- Make sure to have CLEAN audio.
+- MP3s are best because they are smallest in size, compared to .wav
+- Each file can't be more than 10MB. Trim them to 9MB to be safe
+- Running `python src/util/util_split_mp3.py` will break apart larger files. This code could be better customized. It dumps the parts into the main project folder. I then manually move them to the client's folder on my local machine, to be uploaded later.
+- ElevenLabs needs *no more than* 45 minutes of audio. More than this will block the audio from being processed. It's not an error, it doesn't discard the extra, the webform just blocks the process and waits until the input list is reduced to 45 minutes or less.
+
+1. In a browser goto: 11ElevenLabs / My voices / Voices
+
+2. Add a New Voice
+
+3. Wait for the processing to complete (grab a coffee)
+
+4. Once the processing is done for the voice, you only need the voice id for later on. Click the voice (you might get a warning about not having any samples, that's fine).
+And look for the ID button at the bottom. That's what's needed.
+
+## Creating the knowledge base
+
+This is done in AWS Bedrock using Pinecone for the vector database. Why Pinecone? The free tier is fine for getting started.
+
+Requirements:
+
+- As much content as you can find for RAG.
+- Upload the content to a client-specific S3 bucket. You probably want to tag the files with a client-id or some other identifier to track charges later.
+
+-Open AWS Bedrock
+- Goto Builder tools / Knowledge bases
+- Create knowledge base
+
+*Step 1* Provide kb base details
+- name
+- tags
+- leave the rest
+
+*Step 2* Configure data source
+- Set your s3 bucket for the kb-ingestion
+
+*Step 3* Select embeddings / vector store
+- Embed English v3 (Cohere)
+- Vector dimensions - need to match what will be set in the vector database at Pinecone (1024)
+
+Vector database
+- Pick 'choose a vector store you have created'
+- Choose Pinecone
+
+-------------------------
+**Pinecone**
+At this point you either create a new Pinecone account or login to an existing one. Either way - a new Index needs to be created. Don't reuse an existing one, otherwise 
+the db will be shared across knowledge bases (that would be bad).
+
+- Create Index
+- Give it a name
+- Config dimensions: Setup by model, choose Cohere (it will match the model selected in AWS)
+- Cloud Provider: AWS
+- Region: us-east-1
+- Create Index
+- Copy the `host`, which is used back in the AWS setup as the Endpoint URL
+-------------------------
+
+Back in AWS...
+- Paste the Pinecone host into the Endpoint URL
+- Credentials Secret ARN: Past the ARN from AWS Secrets Manager to access Pinecone. Pinecone provides API access through a key. Find it in Pinecone and store it in the Secrets Manager as a new key. Sorry, I'm writing this after already going through the process. I don't have the specifics.
+- Metadata field mapping:
+Text field name: *text_chunks*
+Bedrock-managed metadata field name: *metadata*
+- Click Next
+
+*Step 4* Review and create
+- Click Create Knowledge Base
+If you're lucky, it will work. If not, it's likely a meaningless error that will take some time to figure out. Q is a good place to track down errors.
+
+Not done yet! Go to the Data Source for the kb.
+- Select the data source just created.
+- Click Sync
+
+A message appears it will take minutes/hours to sync, depending on how much source material there is to ingest/parse. Once it's done you can flip over the Pinecone and see the index records. Nothing to do here, it's just a nice visual that something happened.
+
+Test the knowledge base and see what kind of results come back.
+
+## Creating the prompt
+
+Prompt engineering is outside the scope of this readme. We'll cover storing/retrieving the prompt
+
+### LangChain
+
+Prompts are stored in LangChain.
+
+- From the sidebar open Prompts
+- Click New Prompt
+- In the Template at the top click OpenAi (the default), and change the Provider to Amazon Bedrock
+- Leave the Model as 
+- Set the max tokens to your preference
+- Set the temperature (I use 0.9)
+- Set the region to us-east-1
+- Save that config
+

@@ -19,4 +19,4 @@ def split_mp3(file_path, max_size_mb):
 # Example usage:
 #split_mp3("/Users/sturner/Downloads/ViewfromtheTop.mp3", 9)  # Split into 10MB parts
 
-split_mp3("/Users/sturner/Downloads/ViewfromtheTop.mp3", 100)  # Split into 100MB parts
+split_mp3("/Users/sturner/Downloads/AIME/bobby_shaw/audio/re_podcast.mp3", 9)  # 10MB parts

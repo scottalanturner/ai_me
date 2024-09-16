@@ -65,7 +65,7 @@ def get_user_params(user_id: str) -> Dict:
             "bot_name": "AIron",
             "bot_description": "I'm an AI business coach."
         }
-    else:
+    elif user_id == "scott":
         user_params = {
             "prompt_id": "scott-prompt",
             "voice_id": "wzlHb5hWRmpfSi9CTjhM",
@@ -73,6 +73,16 @@ def get_user_params(user_id: str) -> Dict:
             "bot_name": "AI Scott",
             "bot_description": "I'm a personal finance AI that answers questions based on the vast brilliance of Scott Alan Turner, CFP."
         }
+    elif user_id == "bobby_shaw":
+        user_params = {
+            "prompt_id": "aime-bobby-shaw",
+            "voice_id": "DsKycuzHKEuLpbBFa6BO",
+            "knowledge_base_id": "PVCEAHYCD0",
+            "bot_name": "AI Bobby",
+            "bot_description": "I'm an AI in the style of Bobby Shaw - an expert in the hospitality industry. I'm equipped to answer your leadership questions. How may I help you?"
+        }
+    else:
+        raise ValueError(f"Invalid user_id: {user_id}")
 
     return user_params
 
